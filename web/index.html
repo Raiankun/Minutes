@@ -37,58 +37,17 @@
 
     <!-- アプリ本体 -->
     <div id="app" hidden>
-      <nav class="tabs" aria-label="表示の切り替え">
-        <button id="nav-notes" class="tab active" type="button">記録</button>
-        <button id="nav-plans" class="tab" type="button">予定・手続き</button>
+      <nav id="main-nav" class="tabs" aria-label="表示の切り替え">
+        <button class="tab active" data-view="plans" type="button">予定</button>
+        <button class="tab" data-view="meds" type="button">薬</button>
+        <button class="tab" data-view="docs" type="button">資料</button>
+        <button id="nav-notes" class="tab" data-view="notes" type="button" hidden>議事録</button>
       </nav>
 
-      <div id="view-notes">
-      <section class="card">
-        <h2>音声を文字にする</h2>
-        <div class="actions">
-          <button id="rec" class="primary big">● 録音する</button>
-          <label class="file">
-            <input id="file" type="file" accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg,.aac,.flac,.caf">
-            <span>ファイルを選ぶ</span>
-          </label>
-        </div>
-        <p id="status" class="msg" role="status"></p>
-      </section>
-
-      <section id="editor" class="card" hidden>
-        <h2>文字起こし結果</h2>
-        <label>タイトル
-          <input id="title" type="text" maxlength="100" placeholder="例：2026/10/19 通院メモ">
-        </label>
-        <label>日付
-          <input id="recorded-on" type="date">
-        </label>
-        <label>本文
-          <textarea id="text" rows="10"></textarea>
-        </label>
-        <label>メモ
-          <textarea id="memo" rows="3" placeholder="先生に聞きたいこと、体調など"></textarea>
-        </label>
-        <div class="actions">
-          <button id="save" class="primary">保存</button>
-          <button id="copy">コピー</button>
-          <button id="discard" class="link">破棄</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="row">
-          <h2>履歴</h2>
-          <input id="search" type="search" placeholder="検索">
-        </div>
-        <ul id="list" class="list"></ul>
-        <p id="empty" class="msg" hidden>まだ保存されたものはありません。</p>
-      </section>
-      </div>
-
-      <div id="view-plans" hidden>
+      <!-- 予定 -->
+      <div id="view-plans">
         <section class="card">
-          <p class="small">通院・投薬・助成金の手続きを、日付つきで管理します。投薬の量や時刻、通院の内容は<strong>必ず病院・薬局の指示に従って</strong>ください。ここに出るおすすめは一般的な目安です。助成金は自治体ごとに条件や期限が違うため、最終確認は自治体の窓口で行ってください。</p>
+          <p class="small">通院・採卵や移植・助成金の手続きなどを、日付つきで管理します。投薬の予定は「薬」タブから登録します。通院の内容や投薬のタイミングは<strong>必ず病院・薬局の指示に従って</strong>ください。ここに出るおすすめは一般的な目安です。助成金は自治体ごとに条件や期限が違うため、最終確認は自治体の窓口で行ってください。</p>
         </section>
 
         <section id="suggest-card" class="card" hidden>
@@ -115,9 +74,9 @@
             <label>種類
               <select id="plan-kind">
                 <option value="visit">通院</option>
-                <option value="medication">投薬</option>
                 <option value="procedure">採卵・移植など</option>
                 <option value="grant">助成金・手続き</option>
+                <option value="medication">投薬</option>
                 <option value="other">その他</option>
               </select>
             </label>
@@ -142,32 +101,155 @@
           </form>
         </section>
 
+        <p id="plan-msg" class="msg" role="status"></p>
+      </div>
+
+      <!-- 薬 -->
+      <div id="view-meds" hidden>
         <section class="card">
-          <h2>投薬をまとめて登録</h2>
-          <p class="small">病院から指示された日付と時刻のとおりに入力してください。期間内の毎日に、同じ時刻で予定を作ります。</p>
+          <p class="small">薬の名前、保管方法、注意点、受け取った日と数のメモを残します。使い方（量・時刻・保管）は<strong>病院・薬局で言われたとおり</strong>に書き写してください。このアプリは内容を判断しません。</p>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <h2>薬の一覧</h2>
+            <label class="inline"><input id="med-show-inactive" type="checkbox"> 終了した薬も表示</label>
+          </div>
+          <ul id="med-list" class="list"></ul>
+          <p id="med-empty" class="msg">まだ薬は登録されていません。下のフォームから追加できます。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="med-form-title">薬を追加</h2>
           <form id="med-form">
-            <label>薬の名前・メモ
-              <input id="med-title" type="text" maxlength="200" required placeholder="例：ゴナール 注射（指示された量は病院の指示書で確認）">
+            <label>薬の名前
+              <input id="med-name" type="text" maxlength="200" required placeholder="例：ゴナール 注射">
             </label>
             <div class="two">
-              <label>開始日
-                <input id="med-start" type="date" required>
+              <label>受け取った日
+                <input id="med-received" type="date">
               </label>
-              <label>終了日
-                <input id="med-end" type="date">
+              <label>残り（回分・手動）
+                <input id="med-remaining" type="number" min="0" inputmode="numeric" placeholder="例：7">
               </label>
             </div>
-            <label>時刻（複数はカンマ区切り。省略可）
-              <input id="med-times" type="text" placeholder="例：21:00 または 08:00,20:00" inputmode="numeric">
+            <label>受け取った数のメモ
+              <input id="med-quantity" type="text" maxlength="200" placeholder="例：ペン1本、1箱（7回分）">
             </label>
-            <label>メモ
-              <textarea id="med-notes" rows="2" placeholder="例：自己注射、保管は冷蔵 など（病院の指示を書き写す）"></textarea>
+            <label>保管方法のメモ
+              <textarea id="med-storage" rows="2" placeholder="病院・薬局で言われた保管方法（冷蔵など）"></textarea>
             </label>
-            <button class="primary" type="submit">まとめて登録</button>
+            <label>注意点のメモ
+              <textarea id="med-caution" rows="2" placeholder="聞いた注意点、困ったときの連絡先など"></textarea>
+            </label>
+            <div class="actions">
+              <button id="med-save" class="primary" type="submit">追加</button>
+              <button id="med-cancel" class="link" type="button" hidden>編集をやめる</button>
+            </div>
           </form>
         </section>
 
-        <p id="plan-msg" class="msg" role="status"></p>
+        <p id="med-msg" class="msg" role="status"></p>
+      </div>
+
+      <!-- 資料 -->
+      <div id="view-docs" hidden>
+        <section class="card">
+          <p class="small">領収書・申請書類・証明書などの写真やPDFを保存します。ファイルは、あなただけが見られる非公開の保存場所に入ります（1つ20MBまで）。個人情報を含むので、画面を人に見せるときはご注意ください。</p>
+        </section>
+
+        <section id="docs-summary" class="card" hidden>
+          <h2>領収書の合計</h2>
+          <p id="docs-summary-text" class="summary"></p>
+          <p class="small">医療費控除や助成金の確認の目安です。正式な計算は自治体・税務署の案内に従ってください。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="doc-form-title">資料を追加</h2>
+          <form id="doc-form">
+            <label id="doc-file-label">写真・PDF（複数選べます）
+              <input id="doc-file" type="file" accept="image/*,application/pdf" multiple>
+            </label>
+            <label>種類
+              <select id="doc-category"></select>
+            </label>
+            <label>タイトル（空ならファイル名）
+              <input id="doc-title" type="text" maxlength="200" placeholder="例：10月 診察の領収書">
+            </label>
+            <div class="two">
+              <label>日付
+                <input id="doc-date" type="date">
+              </label>
+              <label>金額（領収書など）
+                <input id="doc-amount" type="text" inputmode="numeric" placeholder="例：12,345">
+              </label>
+            </div>
+            <label>メモ
+              <textarea id="doc-notes" rows="2" placeholder="どの申請に使うか、提出先など"></textarea>
+            </label>
+            <div class="actions">
+              <button id="doc-save" class="primary" type="submit">保存</button>
+              <button id="doc-cancel" class="link" type="button" hidden>編集をやめる</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <h2>保存した資料</h2>
+            <select id="doc-filter" aria-label="種類で絞り込む"></select>
+          </div>
+          <input id="doc-search" type="search" placeholder="検索（タイトル・メモ・ファイル名）">
+          <ul id="doc-list" class="list"></ul>
+          <p id="doc-empty" class="msg">まだ資料はありません。</p>
+        </section>
+
+        <p id="doc-msg" class="msg" role="status"></p>
+      </div>
+
+      <!-- 議事録（文字起こしサーバーが設定されているときだけ表示） -->
+      <div id="view-notes" hidden>
+        <section class="card">
+          <h2>音声を文字にする</h2>
+          <div class="actions">
+            <button id="rec" class="primary big">● 録音する</button>
+            <label class="file">
+              <input id="file" type="file" accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg,.aac,.flac,.caf">
+              <span>ファイルを選ぶ</span>
+            </label>
+          </div>
+          <p id="status" class="msg" role="status"></p>
+        </section>
+
+        <section id="editor" class="card" hidden>
+          <h2>文字起こし結果</h2>
+          <label>タイトル
+            <input id="title" type="text" maxlength="100" placeholder="例：2026/10/19 通院メモ">
+          </label>
+          <label>日付
+            <input id="recorded-on" type="date">
+          </label>
+          <label>本文
+            <textarea id="text" rows="10"></textarea>
+          </label>
+          <label>メモ
+            <textarea id="memo" rows="3" placeholder="先生に聞きたいこと、体調など"></textarea>
+          </label>
+          <div class="actions">
+            <button id="save" class="primary">保存</button>
+            <button id="copy">コピー</button>
+            <button id="discard" class="link">破棄</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <h2>履歴</h2>
+            <input id="search" type="search" placeholder="検索">
+          </div>
+          <ul id="list" class="list"></ul>
+          <p id="empty" class="msg" hidden>まだ保存されたものはありません。</p>
+        </section>
       </div>
     </div>
   </main>
@@ -176,6 +258,9 @@
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script src="plans-lib.js"></script>
+  <script src="docs-lib.js"></script>
   <script src="plans.js"></script>
+  <script src="meds.js"></script>
+  <script src="docs.js"></script>
 </body>
 </html>

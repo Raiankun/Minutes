@@ -78,6 +78,8 @@ def test_config_js_exposes_only_public_values(make_client):
     c, _ = make_client()
     body = c.get("/config.js").text
     assert "supabaseUrl" in body and "anon" in body
+    # このサーバーが配信する画面では、議事録（文字起こし）タブを表示する
+    assert '"transcribeEnabled": true' in body
 
 
 def test_cors_preflight_allowed_origin(make_client):

@@ -66,11 +66,43 @@ test("buildSuggestions: 追加済みの項目は重ねて提案しない", () =>
   assert.equal(lib.buildSuggestions(all, T).filter((x) => x.type === "add_checklist").length, 0);
 });
 
-test("buildSuggestions: 投薬があって通院日がなければ通院日と保管方法を提案", () => {
+test("buildSuggestions: 投薬があって通院日がなければ通院日を提案", () => {
   const plans = [{ id: "m", kind: "medication", title: "ゴナール", due_date: "2026-10-20", done: false }];
   const ids = lib.buildSuggestions(plans, T).map((x) => x.id);
   assert.ok(ids.includes("next-visit"));
-  assert.ok(ids.includes("med-storage"));
+});
+
+test("buildSuggestions: 薬のメモ・残り・予定の抜けをヒントにする（購入や用量は提案しない）", () => {
+  const meds = [
+    { id: "m1", name: "ゴナール", active: true, storage_note: "", remaining: 2 },
+    { id: "m2", name: "別の薬", active: true, storage_note: "冷蔵", remaining: 10 },
+    { id: "m3", name: "終了した薬", active: false, storage_note: "", remaining: 0 },
+  ];
+  const plans = [{ id: "p", kind: "medication", medicine_id: "m2", title: "別の薬", due_date: "2026-10-20", done: false }];
+  const hints = lib.buildSuggestions(plans, T, meds).filter((x) => x.type === "hint");
+  assert.deepEqual(hints.map((h) => h.id).sort(), ["low-m1", "noplan-m1", "storage-m1"]);
+  assert.ok(hints.every((h) => !/mg|IU|単位|増や|減ら/.test(h.title + h.reason)));
+});
+
+test("medicineSummary: 薬ごとの件数と次の予定", () => {
+  const plans = [
+    { id: "1", medicine_id: "m1", due_date: "2026-10-18", done: false },
+    { id: "2", medicine_id: "m1", due_date: "2026-10-20", due_time: "21:00", done: false },
+    { id: "3", medicine_id: "m1", due_date: "2026-10-19", done: true },
+    { id: "4", medicine_id: "m2", due_date: "2026-10-20", done: false },
+  ];
+  const s = lib.medicineSummary("m1", plans, T);
+  assert.equal(s.total, 3);
+  assert.equal(s.done, 1);
+  assert.equal(s.overdue, 1);
+  assert.equal(s.next.id, "2");
+  assert.equal(lib.medicineSummary("none", plans, T).next, null);
+});
+
+test("expandMedication: medicineId が各行に入る", () => {
+  const r = lib.expandMedication({ title: "A", startDate: "2026-10-20", endDate: "2026-10-21", medicineId: "m1" });
+  assert.ok(r.rows.every((x) => x.medicine_id === "m1"));
+  assert.equal(lib.expandMedication({ title: "A", startDate: "2026-10-20" }).rows[0].medicine_id, null);
 });
 
 test("buildSuggestions: 先の通院日があれば通院日は提案しない", () => {

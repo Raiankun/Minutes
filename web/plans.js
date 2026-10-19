@@ -9,8 +9,6 @@
   const $ = (id) => document.getElementById(id);
 
   const els = {
-    navNotes: $("nav-notes"), navPlans: $("nav-plans"),
-    viewNotes: $("view-notes"), viewPlans: $("view-plans"),
     suggestCard: $("suggest-card"), suggestList: $("suggest-list"),
     planList: $("plan-list"), planEmpty: $("plan-empty"),
     doneList: $("done-list"), doneCount: $("done-count"),
@@ -18,8 +16,6 @@
     form: $("plan-form"), formTitle: $("plan-form-title"),
     kind: $("plan-kind"), title: $("plan-title"), date: $("plan-date"), time: $("plan-time"),
     notes: $("plan-notes"), save: $("plan-save"), cancel: $("plan-cancel"),
-    medForm: $("med-form"), medTitle: $("med-title"), medStart: $("med-start"), medEnd: $("med-end"),
-    medTimes: $("med-times"), medNotes: $("med-notes"),
   };
 
   let plans = [];
@@ -36,18 +32,6 @@
     els.msg.classList.toggle("error", !!isError);
   }
 
-  /* ---------- タブ ---------- */
-  function showView(which) {
-    const notes = which === "notes";
-    els.viewNotes.hidden = !notes;
-    els.viewPlans.hidden = notes;
-    els.navNotes.classList.toggle("active", notes);
-    els.navPlans.classList.toggle("active", !notes);
-    if (!notes) msg("");
-  }
-  els.navNotes.addEventListener("click", () => showView("notes"));
-  els.navPlans.addEventListener("click", () => showView("plans"));
-
   /* ---------- 読み込み・登録 ---------- */
   async function load() {
     const { data, error } = await sb.from("plans").select("*").limit(1000);
@@ -56,6 +40,8 @@
       return;
     }
     plans = data.map((p) => ({ ...p, due_time: lib.normTime(p.due_time) }));
+    core.state.plans = plans;
+    document.dispatchEvent(new CustomEvent("minutes:changed", { detail: { kind: "plans" } }));
     render();
   }
 
@@ -152,7 +138,7 @@
   }
 
   function renderSuggestions() {
-    const list = lib.buildSuggestions(plans, today());
+    const list = lib.buildSuggestions(plans, today(), core.state.medicines);
     els.suggestCard.hidden = list.length === 0;
     els.suggestList.replaceChildren(
       ...list.map((s) => {
@@ -175,7 +161,7 @@
           }
           li.append(ul);
         }
-        if (s.type !== "alert") {
+        if (s.type !== "alert" && s.type !== "hint") {
           const acts = document.createElement("div");
           acts.className = "actions";
           const btn = document.createElement("button");
@@ -289,27 +275,6 @@
     }
   });
 
-  els.medForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const r = lib.expandMedication({
-      title: els.medTitle.value,
-      startDate: els.medStart.value,
-      endDate: els.medEnd.value,
-      times: els.medTimes.value,
-      notes: els.medNotes.value,
-    });
-    if (r.error) return msg(r.error, true);
-    if (r.rows.length > 30 && !confirm(`${r.rows.length}件の予定を登録します。よろしいですか？`)) return;
-    try {
-      await insertRows(r.rows);
-      msg(`${r.rows.length}件の投薬の予定を登録しました。`);
-      els.medForm.reset();
-      await load();
-    } catch (err) {
-      msg("登録できませんでした：" + (err.message || ""), true);
-    }
-  });
-
   /* ---------- カレンダー書き出し ---------- */
   els.ics.addEventListener("click", () => {
     const ics = lib.buildIcs(plans, Date.now());
@@ -329,9 +294,15 @@
   document.addEventListener("minutes:login", load);
   document.addEventListener("minutes:logout", () => {
     plans = [];
+    core.state.plans = [];
     resetForm();
-    showView("notes");
     render();
+  });
+  document.addEventListener("minutes:changed", (e) => {
+    if (e.detail && e.detail.kind === "medicines") renderSuggestions();
+  });
+  document.addEventListener("minutes:reload", (e) => {
+    if (e.detail && e.detail.kind === "plans") load();
   });
   if (core.getSession()) load();
 })();

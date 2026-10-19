@@ -34,8 +34,28 @@
   let recChunks = [];
   let recStream = null;
 
-  // 予定管理(plans.js)から使えるように共有する
-  window.MinutesCore = { sb, getSession: () => session };
+  // タブの切り替え（予定・薬・資料・議事録）
+  const VIEWS = ["plans", "meds", "docs", "notes"];
+  const tabButtons = Array.from(document.querySelectorAll("#main-nav .tab"));
+  function showView(name) {
+    for (const b of tabButtons) b.classList.toggle("active", b.dataset.view === name);
+    for (const v of VIEWS) {
+      const el = $("view-" + v);
+      if (el) el.hidden = v !== name;
+    }
+  }
+  for (const b of tabButtons) b.addEventListener("click", () => showView(b.dataset.view));
+  // 文字起こしサーバーが設定されているときだけ「議事録」タブを出す
+  $("nav-notes").hidden = cfg.transcribeEnabled !== true;
+
+  // 各タブのスクリプト(plans.js / meds.js / docs.js)から使えるように共有する
+  window.MinutesCore = {
+    sb,
+    getSession: () => session,
+    today,
+    showView,
+    state: { plans: [], medicines: [], docs: [] },
+  };
 
   function setMsg(el, text, isError = false) {
     el.textContent = text || "";
@@ -105,6 +125,7 @@
     const loggedIn = !!s;
     if (loggedIn && !wasIn) document.dispatchEvent(new CustomEvent("minutes:login"));
     if (!loggedIn && wasIn) document.dispatchEvent(new CustomEvent("minutes:logout"));
+    if (!loggedIn) showView("plans");
     els.auth.hidden = loggedIn;
     els.app.hidden = !loggedIn;
     els.userbox.hidden = !loggedIn;

@@ -49,6 +49,7 @@ def create_app(settings: Settings | None = None, transcriber: Transcriber | None
                 "supabaseUrl": settings.supabase_url,
                 "supabaseAnonKey": settings.supabase_anon_key,
                 "apiBaseUrl": "",
+                "transcribeEnabled": True,
             }
         ) + ";"
         return Response(body, media_type="application/javascript", headers={"Cache-Control": "no-store"})

@@ -87,7 +87,7 @@
     return Array.from(new Set(out)).sort();
   }
 
-  function expandMedication({ title, startDate, endDate, times, notes }) {
+  function expandMedication({ title, startDate, endDate, times, notes, medicineId }) {
     const t = String(title || "").trim();
     if (!t) return { error: "薬の名前やメモを入力してください。" };
     const end = endDate || startDate;
@@ -103,7 +103,7 @@
     for (let i = 0; i < days; i++) {
       const d = addDays(startDate, i);
       for (const tm of slots) {
-        rows.push({ kind: "medication", title: t, due_date: d, due_time: tm, notes: String(notes || "").trim() });
+        rows.push({ kind: "medication", title: t, due_date: d, due_time: tm, notes: String(notes || "").trim(), medicine_id: medicineId || null });
       }
     }
     return { rows };
@@ -121,7 +121,8 @@
   }
 
   /* ---------- おすすめ（ルールベース。通院・投薬の内容そのものは提案しない） ---------- */
-  function buildSuggestions(plans, today) {
+  function buildSuggestions(plans, today, medicines) {
+    medicines = medicines || [];
     const out = [];
     const open = plans.filter((p) => !p.done);
     const titles = new Set(plans.map((p) => p.title));
@@ -164,15 +165,33 @@
       });
     }
 
-    const T2 = "薬の受け取り方法と保管方法を、病院・薬局に確認する";
-    if (upcoming.some((p) => p.kind === "medication") && !titles.has(T2)) {
-      out.push({
-        id: "med-storage",
-        type: "add_plan",
-        title: T2,
-        reason: "注射薬などは、冷蔵が必要なものがあります。薬ごとの扱いは薬剤師や病院の指示に従います。",
-        plan: { kind: "medication", title: T2, notes: "" },
-      });
+    // 薬のメモ・残り・予定の抜け（薬の内容そのものは提案しない）
+    for (const med of medicines.filter((x) => x.active !== false)) {
+      if (!String(med.storage_note || "").trim()) {
+        out.push({
+          id: `storage-${med.id}`,
+          type: "hint",
+          title: `「${med.name}」の保管方法のメモが空です`,
+          reason: "冷蔵が必要なものなど、薬ごとに扱いが違います。病院・薬局で確認して、薬のメモに書いておきましょう。",
+        });
+      }
+      if (med.remaining != null && med.remaining <= 2) {
+        out.push({
+          id: `low-${med.id}`,
+          type: "hint",
+          title: `「${med.name}」の残りが${med.remaining}回分です`,
+          reason: "追加の処方や受け取りが必要かどうか、早めに病院に確認しましょう。",
+        });
+      }
+      const hasPlan = open.some((p) => p.medicine_id === med.id && p.due_date && p.due_date >= today);
+      if (!hasPlan) {
+        out.push({
+          id: `noplan-${med.id}`,
+          type: "hint",
+          title: `「${med.name}」の予定が登録されていません`,
+          reason: "病院から指示された日付と時刻があれば、薬の画面から予定を登録すると、カレンダーで通知できます。",
+        });
+      }
     }
 
     const T3 = "採卵・移植の当日の持ち物・来院時間・食事の指示を病院に確認する";
@@ -188,6 +207,19 @@
     }
 
     return out;
+  }
+
+  /* ---------- 薬ごとの予定の集計 ---------- */
+  function medicineSummary(medicineId, plans, today) {
+    const mine = plans.filter((p) => p.medicine_id === medicineId);
+    const open = sortPlans(mine.filter((p) => !p.done && p.due_date));
+    const next = open.find((p) => p.due_date >= today) || null;
+    return {
+      total: mine.length,
+      done: mine.filter((p) => p.done).length,
+      overdue: open.filter((p) => p.due_date < today).length,
+      next,
+    };
   }
 
   /* ---------- カレンダー(.ics)出力 ---------- */
@@ -245,7 +277,7 @@
   const api = {
     KINDS, GRANT_CHECKLIST, MAX_DAYS, MAX_ROWS,
     parseDate, addDays, diffDays, normTime, parseTimes,
-    expandMedication, sortPlans, buildSuggestions, buildIcs,
+    expandMedication, sortPlans, buildSuggestions, buildIcs, medicineSummary,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.MinutesPlans = api;

@@ -131,3 +131,23 @@ select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .done-box { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
 .done-box summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+
+/* ---------- 薬・資料 ---------- */
+.inline { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+.inline input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.med.is-inactive .plan-title { color: var(--muted); font-weight: 400; }
+.med-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.med-line { margin: 2px 0; font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.med-label { display: inline-block; min-width: 6.5em; margin-right: 6px; font-size: 12px; color: var(--muted); }
+.stepper { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.stepper button { padding: 2px 12px; min-width: 40px; }
+.stepper-value { min-width: 4.5em; text-align: center; font-weight: 600; }
+.sched { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.sched .primary { width: 100%; }
+
+.doc .item-head { cursor: default; }
+.summary { margin: 0 0 8px; white-space: pre-line; font-weight: 600; }
+#doc-search { margin: 4px 0 8px; }
+#doc-filter { width: auto; max-width: 55%; margin: 0; }
+input[type=file] { width: 100%; margin-top: 4px; font: inherit; }
