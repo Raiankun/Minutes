@@ -47,3 +47,47 @@ drop trigger if exists transcripts_set_updated_at on public.transcripts;
 create trigger transcripts_set_updated_at
   before update on public.transcripts
   for each row execute function public.set_updated_at();
+
+-- ============================================================
+-- 予定・投薬・助成金などの管理（plans）。既存の環境でもこのファイル全体を再実行して構いません。
+-- ============================================================
+create table if not exists public.plans (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  kind       text not null default 'other' check (kind in ('visit', 'medication', 'procedure', 'grant', 'other')),
+  title      text not null check (char_length(title) between 1 and 200),
+  due_date   date,
+  due_time   time,
+  notes      text not null default '',
+  done       boolean not null default false,
+  done_at    timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists plans_user_done_due_idx
+  on public.plans (user_id, done, due_date);
+
+alter table public.plans enable row level security;
+
+drop policy if exists "plans_select_own" on public.plans;
+drop policy if exists "plans_insert_own" on public.plans;
+drop policy if exists "plans_update_own" on public.plans;
+drop policy if exists "plans_delete_own" on public.plans;
+
+create policy "plans_select_own" on public.plans
+  for select to authenticated using (auth.uid() = user_id);
+
+create policy "plans_insert_own" on public.plans
+  for insert to authenticated with check (auth.uid() = user_id);
+
+create policy "plans_update_own" on public.plans
+  for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "plans_delete_own" on public.plans
+  for delete to authenticated using (auth.uid() = user_id);
+
+drop trigger if exists plans_set_updated_at on public.plans;
+create trigger plans_set_updated_at
+  before update on public.plans
+  for each row execute function public.set_updated_at();

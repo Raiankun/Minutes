@@ -37,6 +37,12 @@
 
     <!-- アプリ本体 -->
     <div id="app" hidden>
+      <nav class="tabs" aria-label="表示の切り替え">
+        <button id="nav-notes" class="tab active" type="button">記録</button>
+        <button id="nav-plans" class="tab" type="button">予定・手続き</button>
+      </nav>
+
+      <div id="view-notes">
       <section class="card">
         <h2>音声を文字にする</h2>
         <div class="actions">
@@ -78,11 +84,98 @@
         <ul id="list" class="list"></ul>
         <p id="empty" class="msg" hidden>まだ保存されたものはありません。</p>
       </section>
+      </div>
+
+      <div id="view-plans" hidden>
+        <section class="card">
+          <p class="small">通院・投薬・助成金の手続きを、日付つきで管理します。投薬の量や時刻、通院の内容は<strong>必ず病院・薬局の指示に従って</strong>ください。ここに出るおすすめは一般的な目安です。助成金は自治体ごとに条件や期限が違うため、最終確認は自治体の窓口で行ってください。</p>
+        </section>
+
+        <section id="suggest-card" class="card" hidden>
+          <h2>おすすめ</h2>
+          <ul id="suggest-list" class="list"></ul>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <h2>これからの予定</h2>
+            <button id="ics" type="button">カレンダーに書き出す</button>
+          </div>
+          <ul id="plan-list" class="list"></ul>
+          <p id="plan-empty" class="msg">まだ予定はありません。下のフォームから追加できます。</p>
+          <details class="done-box">
+            <summary>完了したもの（<span id="done-count">0</span>）</summary>
+            <ul id="done-list" class="list"></ul>
+          </details>
+        </section>
+
+        <section class="card" id="plan-form-card">
+          <h2 id="plan-form-title">予定を追加</h2>
+          <form id="plan-form">
+            <label>種類
+              <select id="plan-kind">
+                <option value="visit">通院</option>
+                <option value="medication">投薬</option>
+                <option value="procedure">採卵・移植など</option>
+                <option value="grant">助成金・手続き</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
+            <label>内容
+              <input id="plan-title" type="text" maxlength="200" required placeholder="例：診察、助成金の申請書を提出">
+            </label>
+            <div class="two">
+              <label>日付
+                <input id="plan-date" type="date">
+              </label>
+              <label>時刻
+                <input id="plan-time" type="time">
+              </label>
+            </div>
+            <label>メモ
+              <textarea id="plan-notes" rows="3" placeholder="持ち物、窓口の電話番号など"></textarea>
+            </label>
+            <div class="actions">
+              <button id="plan-save" class="primary" type="submit">追加</button>
+              <button id="plan-cancel" class="link" type="button" hidden>編集をやめる</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>投薬をまとめて登録</h2>
+          <p class="small">病院から指示された日付と時刻のとおりに入力してください。期間内の毎日に、同じ時刻で予定を作ります。</p>
+          <form id="med-form">
+            <label>薬の名前・メモ
+              <input id="med-title" type="text" maxlength="200" required placeholder="例：ゴナール 注射（指示された量は病院の指示書で確認）">
+            </label>
+            <div class="two">
+              <label>開始日
+                <input id="med-start" type="date" required>
+              </label>
+              <label>終了日
+                <input id="med-end" type="date">
+              </label>
+            </div>
+            <label>時刻（複数はカンマ区切り。省略可）
+              <input id="med-times" type="text" placeholder="例：21:00 または 08:00,20:00" inputmode="numeric">
+            </label>
+            <label>メモ
+              <textarea id="med-notes" rows="2" placeholder="例：自己注射、保管は冷蔵 など（病院の指示を書き写す）"></textarea>
+            </label>
+            <button class="primary" type="submit">まとめて登録</button>
+          </form>
+        </section>
+
+        <p id="plan-msg" class="msg" role="status"></p>
+      </div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
+  <script src="plans-lib.js"></script>
+  <script src="plans.js"></script>
 </body>
 </html>

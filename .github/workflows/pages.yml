@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 変数が未設定のあいだは実行しない（設定前に失敗の表示が出ないようにする）
+    if: ${{ vars.SUPABASE_URL != '' && vars.SUPABASE_ANON_KEY != '' && vars.API_BASE_URL != '' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

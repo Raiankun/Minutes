@@ -99,3 +99,35 @@ button.recording { background: var(--danger); border-color: var(--danger); color
 .item-body { margin-top: 10px; }
 .item-body pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0 0 8px; }
 .item-body .memo { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; }
+
+/* ---------- 予定・手続き ---------- */
+#view-notes, #view-plans { display: grid; gap: 16px; }
+.small { margin: 0; font-size: 13px; color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+select {
+  display: block; width: 100%; margin-top: 4px; padding: 11px 12px;
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px;
+}
+select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.plan { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; }
+.plan input[type=checkbox] { width: 22px; height: 22px; margin-top: 3px; accent-color: var(--accent); }
+.plan-title { font-weight: 600; overflow-wrap: anywhere; }
+.plan.is-done .plan-title { text-decoration: line-through; color: var(--muted); font-weight: 400; }
+.plan-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; }
+.badge.warn { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.badge.late { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+.plan-notes { grid-column: 2; margin: 0; font-size: 13px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.plan-actions { grid-column: 2; display: flex; gap: 8px; margin-top: 4px; }
+.plan-actions button { padding: 5px 12px; font-size: 13px; }
+
+.suggest { display: grid; gap: 6px; }
+.suggest-title { font-weight: 600; overflow-wrap: anywhere; }
+.suggest.alert .suggest-title { color: var(--danger); }
+.suggest-reason { margin: 0; font-size: 13px; color: var(--muted); }
+.suggest .actions button { padding: 6px 14px; font-size: 14px; }
+
+.done-box { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.done-box summary { cursor: pointer; font-size: 14px; color: var(--muted); }

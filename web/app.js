@@ -34,6 +34,9 @@
   let recChunks = [];
   let recStream = null;
 
+  // 予定管理(plans.js)から使えるように共有する
+  window.MinutesCore = { sb, getSession: () => session };
+
   function setMsg(el, text, isError = false) {
     el.textContent = text || "";
     el.classList.toggle("error", !!isError);
@@ -100,6 +103,8 @@
     const wasIn = !!session;
     session = s;
     const loggedIn = !!s;
+    if (loggedIn && !wasIn) document.dispatchEvent(new CustomEvent("minutes:login"));
+    if (!loggedIn && wasIn) document.dispatchEvent(new CustomEvent("minutes:logout"));
     els.auth.hidden = loggedIn;
     els.app.hidden = !loggedIn;
     els.userbox.hidden = !loggedIn;
