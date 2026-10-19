@@ -20,10 +20,13 @@ class Settings:
     max_upload_mb: int
     # カンマ区切りで指定したメールアドレスだけ利用を許可する（空なら全ログインユーザー）
     allowed_emails: frozenset[str]
+    # 別ドメインの画面（GitHub Pagesなど）からのアクセスを許可するオリジン（例: https://raiankun.github.io）
+    allowed_origins: tuple[str, ...] = ()
 
 
 def load_settings() -> Settings:
     allowed = os.environ.get("ALLOWED_EMAILS", "")
+    origins = os.environ.get("ALLOWED_ORIGINS", "")
     return Settings(
         supabase_url=os.environ.get("SUPABASE_URL", "").rstrip("/"),
         supabase_anon_key=os.environ.get("SUPABASE_ANON_KEY", ""),
@@ -34,5 +37,8 @@ def load_settings() -> Settings:
         max_upload_mb=_int("MAX_UPLOAD_MB", 100),
         allowed_emails=frozenset(
             e.strip().lower() for e in allowed.split(",") if e.strip()
+        ),
+        allowed_origins=tuple(
+            o.strip().rstrip("/") for o in origins.split(",") if o.strip()
         ),
     )

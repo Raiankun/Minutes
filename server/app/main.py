@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
@@ -30,11 +31,25 @@ def create_app(settings: Settings | None = None, transcriber: Transcriber | None
     app.state.settings = settings
     app.state.transcriber = transcriber or WhisperTranscriber(settings)
 
+    if settings.allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.allowed_origins),
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type"],
+            max_age=600,
+        )
+
     @app.get("/config.js", include_in_schema=False)
     def config_js() -> Response:
-        # SupabaseのURLとanonキーは公開前提の値（権限はRLSで制御）
+        # SupabaseのURLとanonキーは公開前提の値（権限はRLSで制御）。
+        # 画面をこのサーバー自身が配信するときは、APIも同じオリジンなので apiBaseUrl は空。
         body = "window.MINUTES_CONFIG = " + json.dumps(
-            {"supabaseUrl": settings.supabase_url, "supabaseAnonKey": settings.supabase_anon_key}
+            {
+                "supabaseUrl": settings.supabase_url,
+                "supabaseAnonKey": settings.supabase_anon_key,
+                "apiBaseUrl": "",
+            }
         ) + ";"
         return Response(body, media_type="application/javascript", headers={"Cache-Control": "no-store"})
 

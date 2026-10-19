@@ -3,6 +3,8 @@
 
   const $ = (id) => document.getElementById(id);
   const cfg = window.MINUTES_CONFIG || {};
+  // 文字起こしサーバーの場所。サーバー自身が画面を配信する場合は空（同じオリジン）。
+  const apiBase = (cfg.apiBaseUrl || "").replace(/\/+$/, "");
 
   const els = {
     auth: $("auth"), app: $("app"), userbox: $("userbox"), useremail: $("useremail"),
@@ -173,11 +175,16 @@
       fd.append("file", file, file.name);
       const { data } = await sb.auth.getSession();
       const token = data.session && data.session.access_token;
-      const res = await fetch("/api/transcribe", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+      let res;
+      try {
+        res = await fetch(`${apiBase}/api/transcribe`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      } catch {
+        throw new Error("文字起こしサーバーに接続できません。自宅PCのサーバーが起動しているか確認してください。");
+      }
       if (!res.ok) {
         let detail = "";
         try { detail = (await res.json()).detail; } catch { /* ignore */ }

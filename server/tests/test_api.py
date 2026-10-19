@@ -80,6 +80,35 @@ def test_config_js_exposes_only_public_values(make_client):
     assert "supabaseUrl" in body and "anon" in body
 
 
+def test_cors_preflight_allowed_origin(make_client):
+    c, _ = make_client(make_settings(allowed_origins=("https://raiankun.github.io",)))
+    r = c.options(
+        "/api/transcribe",
+        headers={
+            "Origin": "https://raiankun.github.io",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == "https://raiankun.github.io"
+
+
+def test_cors_preflight_other_origin_rejected(make_client):
+    c, _ = make_client(make_settings(allowed_origins=("https://raiankun.github.io",)))
+    r = c.options(
+        "/api/transcribe",
+        headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"},
+    )
+    assert "access-control-allow-origin" not in r.headers
+
+
+def test_no_cors_headers_when_not_configured(make_client):
+    c, _ = make_client()
+    r = c.get("/api/health", headers={"Origin": "https://raiankun.github.io"})
+    assert "access-control-allow-origin" not in r.headers
+
+
 def test_transcribe_requires_login(make_client):
     c, _ = make_client()
     assert c.post("/api/transcribe", files=AUDIO).status_code == 401

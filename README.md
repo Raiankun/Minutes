@@ -39,9 +39,33 @@ uvicorn app.main:app --env-file ../.env --host 0.0.0.0 --port 8000
 
 ブラウザで http://localhost:8000 を開きます。初回の文字起こし時に Whisper モデルをダウンロードします（`small` で約500MB、少し待ちます）。
 
-### 3. スマホから使う場合
+### 3. 自宅PCを外から使えるようにする（スマホ・外出先から）
 
-ブラウザの録音機能は **HTTPS（または localhost）でしか動きません**。スマホから録音するには、Tailscale Serve や Cloudflare Tunnel などで HTTPS 化してアクセスしてください。ファイルを選んで文字起こしするだけなら HTTP でも動きます。
+ブラウザの録音機能は **HTTPS（または localhost）でしか動きません**。自宅PCのサーバーを、HTTPSのURLで公開します。
+
+- **Tailscale Funnel（おすすめ・無料）**: `https://<PC名>.<tailnet名>.ts.net` という固定のURLが得られます。Tailscaleのアカウントで Funnel を有効にしたうえで `tailscale funnel 8000` を実行します
+- **Cloudflare Tunnel**: 独自ドメインがあれば固定URLにできます。ドメインなしの簡易トンネル（`trycloudflare.com`）は、起動のたびにURLが変わるので常用には向きません
+
+公開すると、URLを知っている人はサーバーに到達できます。`.env` の `ALLOWED_EMAILS` に2人のメールアドレスを必ず入れてください（ログインしていない人、許可されていない人は文字起こしを使えません）。
+
+この公開URLを開けば、サーバーが画面も配信するので、**それだけで使えます**（次のPages配信は任意です）。
+
+### 4. GitHub Pagesで画面を配信する（任意）
+
+画面だけをGitHub Pagesに置き、文字起こしは自宅PCのサーバーに任せる構成です。
+
+1. リポジトリの Settings > Pages で、Source を **GitHub Actions** にする
+2. Settings > Secrets and variables > Actions > **Variables** に次の3つを登録する
+   - `SUPABASE_URL`、`SUPABASE_ANON_KEY`（Supabaseの値）
+   - `API_BASE_URL`（手順3で得た自宅PCの公開URL。末尾の `/` なし）
+3. `.env` の `ALLOWED_ORIGINS` にPagesのオリジン（例: `https://raiankun.github.io`）を入れてサーバーを再起動する
+4. Supabase の Authentication > URL Configuration の Site URL にPagesのURLを設定する（確認メールのリンク先になります）
+5. `main` に `web/` の変更をpushするか、Actionsタブから「Deploy web to GitHub Pages」を手動実行する
+
+注意:
+- 無料プランのGitHubでは、Pagesを使うリポジトリは **公開（public）** になります。コードは公開されますが、鍵や記録は含まれません（anonキーは公開前提の値で、記録はRLSで守られます）
+- 自宅PCが止まっていると、画面は開けても文字起こしはできません（ログインと履歴の閲覧はSupabase側なので使えます）
+- 手順3のURLを変えたら、`API_BASE_URL` を更新してActionsを再実行してください
 
 ## 使い方
 

@@ -1,0 +1,60 @@
+name: Deploy web to GitHub Pages
+
+# web/ の画面だけを GitHub Pages に公開する（文字起こしサーバーは別の場所で動かす）。
+# 接続先は リポジトリの Settings > Secrets and variables > Actions > Variables で設定:
+#   SUPABASE_URL / SUPABASE_ANON_KEY / API_BASE_URL
+# いずれも公開前提の値（anon キーは RLS で守られる）なので Variables で構いません。service_role キーは入れないこと。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build site
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          for v in SUPABASE_URL SUPABASE_ANON_KEY API_BASE_URL; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Repository variable $v is not set (Settings > Secrets and variables > Actions > Variables)"
+              exit 1
+            fi
+          done
+          mkdir dist
+          cp -r web/. dist/
+          jq -rn \
+            --arg u "$SUPABASE_URL" --arg k "$SUPABASE_ANON_KEY" --arg a "$API_BASE_URL" \
+            '"window.MINUTES_CONFIG = " + ({supabaseUrl: $u, supabaseAnonKey: $k, apiBaseUrl: $a} | tojson) + ";"' \
+            > dist/config.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
